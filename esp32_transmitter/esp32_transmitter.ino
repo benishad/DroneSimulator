@@ -56,16 +56,23 @@ int mapJoystickValues(int val, int lower, int middle, int upper, bool reverse)
 
 void loop()
 {
-  data.throttle = mapJoystickValues(analogRead(34), 80, 1850, 4050, true);//34
-  data.yaw      = mapJoystickValues(analogRead(14), 0, 2045, 4095, true);//35
-  data.pitch    = mapJoystickValues(analogRead(15), 0, 1765, 4095, true);//32
-  data.roll     = mapJoystickValues(analogRead(35), 0, 2045, 4095, false);//33
+  data.throttle = mapJoystickValues(analogRead(34), 50, 1850, 3800, true);//34
+  data.yaw      = mapJoystickValues(analogRead(14), 5, 2080, 4095, true);//35
+  data.pitch    = mapJoystickValues(analogRead(15), 80, 1750, 4095, true);//32
+  data.roll     = mapJoystickValues(analogRead(35), 0, 2060, 4095, false);//33
   data.AUX1     = digitalRead(32);//26
   data.AUX2     = digitalRead(33);//25
 
   radio.write(&data, sizeof(MyData));
+  
+//  TEST_OUT();
+  SPRINT();
 
-//   송신하는 값을 시리얼 모니터에 출력
+  //delay(100); // 일정 시간 간격으로 송신 (500ms = 0.5초)
+}
+
+void SPRINT(){
+  //   송신하는 값을 시리얼 모니터에 출력
   Serial.print("조종기 값 -->  ");
   Serial.print("Throttle: ");
   Serial.print(data.throttle);
@@ -79,6 +86,17 @@ void loop()
   Serial.print(data.AUX1);
   Serial.print("  AUX2: ");
   Serial.println(data.AUX2);
+}
 
-  //delay(100); // 일정 시간 간격으로 송신 (500ms = 0.5초)
+void TEST_OUT(){
+  //직접 돌려보면서 최소 중간 최대 값을 찾기
+  Serial.print("조종기 값 -->  ");
+  Serial.print("Throttle: ");
+  Serial.print(analogRead(34));
+  Serial.print("  Yaw: ");
+  Serial.print(analogRead(14));
+  Serial.print("  Pitch: ");
+  Serial.print(analogRead(15));
+  Serial.print("  Roll: ");
+  Serial.println(analogRead(35));
 }
