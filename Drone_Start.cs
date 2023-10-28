@@ -4,14 +4,15 @@ using UnityEngine;
 
 public class PropStart : MonoBehaviour
 {
-
-    public GameObject[] propellers; // 프로펠러 오브젝트 배열
-    public Vector3[] rotationAxes; // 각 프로펠러의 회전 축
-    public float defaultRotationSpeed = 100f; // 기본 회전 속도
+    public Rigidbody droneRigidbody; // 드론의 Rigidbody
+    public float liftForce = 50f; // 드론이 상승하는 힘
+    
+    public GameObject[] propellers;
+    public Vector3[] rotationAxes;
+    public float defaultRotationSpeed = 100f;
     private float currentRotationSpeed = 0f;
 
-    private bool EngineData = false; // 엔진 데이터
-
+    private bool EngineData = false;
     private bool isChecking = false;
 
     struct MyData
@@ -26,7 +27,6 @@ public class PropStart : MonoBehaviour
 
     MyData data;
 
-
     void Start()
     {
         SaveData();
@@ -34,7 +34,7 @@ public class PropStart : MonoBehaviour
 
     private void Update()
     {
-        DataGet(); //데이터 불러오기
+        DataGet();
 
         // 시동 걸기
         if (data.throttle == 0 && data.yaw == 255 && !isChecking)
@@ -43,16 +43,23 @@ public class PropStart : MonoBehaviour
         }
 
         // 시동 끄기
-        if (data.throttle == 0 && data.yaw == 0) 
+        if (data.throttle == 0 && data.yaw == 0)
         {
-            StopAllCoroutines(); // Ensure the coroutine stops if conditions are no longer met
+            StopAllCoroutines();
             isChecking = false;
-            StartCoroutine(ChangeRotationSpeed(0f, 1f)); // 회전속도를 0으로 변경
+            StartCoroutine(ChangeRotationSpeed(0f, 1f));
         }
 
         // 시동이 켜진 상태에서만 명령 수행
         if (EngineData)
         {
+            // 드론 상승
+            if (data.throttle > 10)
+            {
+                float appliedLiftForce = liftForce * ((data.throttle - 10) / 100f);
+                droneRigidbody.AddForce(transform.up * appliedLiftForce);
+            }
+
             for (int i = 0; i < propellers.Length; i++)
             {
                 propellers[i].transform.Rotate(rotationAxes[i], currentRotationSpeed * Time.deltaTime);
@@ -63,40 +70,27 @@ public class PropStart : MonoBehaviour
     private IEnumerator CheckEngineStart()
     {
         isChecking = true;
-        yield return new WaitForSeconds(2f);  // 2초 동안 대기
+        yield return new WaitForSeconds(2f);
 
-        // 2초 후에도 조건이 유효한지 확인
         if (data.throttle == 0 && data.yaw == 255)
         {
-            EngineData = true;  // 시동 걸기
-            StartCoroutine(ChangeRotationSpeed(defaultRotationSpeed, 1f)); // 회전속도를 임의로 설정한 회전속도로 변경
+            EngineData = true;
+            StartCoroutine(ChangeRotationSpeed(defaultRotationSpeed, 1f));
         }
 
         isChecking = false;
     }
 
-    void serial_print()
-    {
-        Debug.Log("Throttle_2: " + data.throttle +
-                  " Yaw_2: " + data.yaw +
-                  " Pitch_2: " + data.pitch +
-                  " Roll_2: " + data.roll +
-                  " AUX1_2: " + data.AUX1 +
-                  " AUX2_2: " + data.AUX2);
-    }
-
     void DataGet()
     {
-        // PlayerPrefs에서 저장된 throttle, yaw, pitch, roll, aux1, aux2 값을 불러옵니다.
         data.throttle = PlayerPrefs.GetInt("ThrottleValue");
-        data.yaw = PlayerPrefs.GetInt("YawValue"); // 적절한 기본값 설정
-        data.pitch = PlayerPrefs.GetInt("PitchValue"); // 적절한 기본값 설정
-        data.roll = PlayerPrefs.GetInt("RollValue"); // 적절한 기본값 설정
-        data.AUX1 = PlayerPrefs.GetInt("AUX1Value"); // 적절한 기본값 설정
-        data.AUX2 = PlayerPrefs.GetInt("AUX2Value"); // 적절한 기본값 설정
+        data.yaw = PlayerPrefs.GetInt("YawValue");
+        data.pitch = PlayerPrefs.GetInt("PitchValue");
+        data.roll = PlayerPrefs.GetInt("RollValue");
+        data.AUX1 = PlayerPrefs.GetInt("AUX1Value");
+        data.AUX2 = PlayerPrefs.GetInt("AUX2Value");
     }
 
-    // 데이터를 다른 스크립트에서 사용하기 위해 저장
     void SaveData()
     {
         PlayerPrefs.SetFloat("defaultRotationSpeedValue", defaultRotationSpeed);
@@ -104,7 +98,6 @@ public class PropStart : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    // 회전 속도를 부드럽게 변경하는 보간 함수
     private IEnumerator ChangeRotationSpeed(float targetSpeed, float duration)
     {
         float startSpeed = currentRotationSpeed;
